@@ -93,6 +93,7 @@ use Socket;
 use strict;
 use Fcntl qw(:flock);
 use IO::Socket::SSL;
+use POSIX qw/setuid setgid/;
 
 my ($debug, $log, $pidfile, $cfgfile,
 	$update_host, $update_uri, $update_port,
@@ -151,6 +152,10 @@ Please remember: dyfi-update.pl is a daemon, not a cron script.
 
 ";
 
+# drop privileges
+my $username = 'dyfi';
+drop_privileges($username);
+
 #
 #	parse arguments
 #
@@ -194,6 +199,15 @@ if (!$pidfile) {
 	print "No pid file specified - it is mandatory.\nExample: /var/run/dyfi-update.pid\n";
 	print $helpstr;
 	exit 1;
+}
+
+# Drop privileges.
+sub drop_privileges {
+	my $username = shift;
+	
+	my ($uid, $gid) = (getpwnam($username))[2, 3];
+	setgid($gid) || crash("Can't drop privileges: $!");
+	setuid($uid) || crash("Can't drop privileges: $!");
 }
 
 #
